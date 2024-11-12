@@ -3,6 +3,9 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Project files
+images/*.png
+
 # C extensions
 *.so
 
