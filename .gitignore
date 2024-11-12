@@ -4,7 +4,7 @@ __pycache__/
 *$py.class
 
 # Project files
-images/*.png
+map/images/*.png
 
 # C extensions
 *.so
