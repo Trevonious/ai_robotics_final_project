@@ -1,40 +1,39 @@
-import argparse
+import sys
 import cv2
 import glob
 import math
 import numpy as np
 import os
 import random
-
-# To run this script, use the following command:
-#   py generate_maps.py
-#
-# To pass in parameters, use the following flags:
-#   -d or --display: Display generated maps, one by one
-#   -nm or --num_maps: The number of maps to generate
-#   -no or --num_obstacles: The number of obstacles to generate
-#
-# Example:
-#   py generate_maps.py -d True -nm 5 -no 10
+import time
 
 def generateMaps(
+  display_maps = False,
   number_maps = 1,
   number_obstacles = 20,
-  display_maps = False
+  test_run = False,
+  verbose = False
 ) -> list:
   """
   Generate maps with random obstacles and save them as images in the 
   <i>map/images</i> folder.
 
+  @param display_maps: Display generated maps, one by one (default is False)
   @param number_maps: The number of maps to generate (default is 1)
   @param number_obstacles: The number of obstacles to generate (default is 20)
-  @param display_maps: Display generated maps, one by one (default is False)
-
-  Returns:
-    A list of generated maps
+  @param test_run: Whether or not this is a test run (default is False)
+  @param verbose: Verbose output (default is False)
+  @return: A list of generated maps
   """
 
+  print("Generating maps...")
+
+  start_time = time.time()
   images_folder_path = './ai_robotics_final_project/map/images/'
+
+  if test_run:
+    images_folder_path = './ai_robotics_final_project/tests/images/'
+
   maps = []
   num_maps = number_maps
   num_obstacles = number_obstacles
@@ -68,6 +67,16 @@ def generateMaps(
     cv2.imwrite(images_folder_path + "map" + map_number + ".png", map)
     maps.append(np.array(map))
   
+  end_time = time.time()
+  total_map_generation_time = end_time - start_time
+
+  print(str(verbose))
+
+  if verbose:
+    print("Total Map Generation Time:", total_map_generation_time, "seconds")
+  
+  print("Maps generated successfully!")
+  
   return maps
 
 def generateObstacle(map, x_coord = -1, y_coord = -1) -> None:
@@ -79,6 +88,7 @@ def generateObstacle(map, x_coord = -1, y_coord = -1) -> None:
   @param x_coord: The x-coordinate of the obstacle (default is -1)
   @param y_coord: The y-coordinate of the obstacle (default is -1)
   """
+
   x = x_coord
   y = y_coord
 
@@ -154,12 +164,3 @@ def generateObstacle(map, x_coord = -1, y_coord = -1) -> None:
       y2 = y + size_y
     
     cv2.rectangle(map, (x, y), (x2, y2), color, -1)
-
-# Parse command line arguments
-parser = argparse.ArgumentParser()
-parser.add_argument('-d', '--display', help='Display generated maps, one by one', type=bool, default=False)
-parser.add_argument('-nm', '--num_maps', help='The number of maps to generate', type=int, default=1)
-parser.add_argument('-no', '--num_obstacles', help='The number of obstacles to generate', type=int, default=20)
-args = parser.parse_args()
-
-generateMaps(args.num_maps, args.num_obstacles, args.display)
