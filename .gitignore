@@ -5,7 +5,7 @@ __pycache__/
 
 # Project files
 map/images/*.png
-solution/*.png
+map/images/solutions/*.png
 
 # VS Code
 .vscode/*

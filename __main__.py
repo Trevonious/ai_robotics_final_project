@@ -3,8 +3,7 @@ from ai_robotics_final_project.d_star.d_star import *
 from ai_robotics_final_project.map.generate_maps import generateMaps
 
 # Main execution
-images_folder_path = './ai_robotics_final_project/map/images/'
-solutions_folder_path = './ai_robotics_final_project/solutions/'
+solutions_folder_path = './ai_robotics_final_project/map/images/solutions/'
 map_number = 1
 maps = generateMaps()
 
