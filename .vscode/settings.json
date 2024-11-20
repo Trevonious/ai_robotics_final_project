@@ -1,0 +1,10 @@
+{
+  "python.analysis.extraPaths": [
+    "./analysis",
+    "./d_star",
+    "./graph",
+    "./map",
+    "./rrt",
+    "./solutions",
+  ]
+}

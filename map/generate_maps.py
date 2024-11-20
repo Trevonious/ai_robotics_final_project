@@ -17,15 +17,11 @@ import random
 # Example:
 #   py generate_maps.py -d True -nm 5 -no 10
 
-# Parse command line arguments
-parser = argparse.ArgumentParser()
-parser.add_argument('-d', '--display', help='Display generated maps, one by one', type=bool, default=False)
-parser.add_argument('-nm', '--num_maps', help='The number of maps to generate', type=int, default=1)
-parser.add_argument('-no', '--num_obstacles', help='The number of obstacles to generate', type=int, default=20)
-args = parser.parse_args()
-
-
-def generateMaps(number_maps = 1, number_obstacles = 20, display_maps = False):
+def generateMaps(
+  number_maps = 1,
+  number_obstacles = 20,
+  display_maps = False
+) -> list:
   """
   Generate maps with random obstacles and save them as images in the 
   <i>map/images</i> folder.
@@ -35,10 +31,10 @@ def generateMaps(number_maps = 1, number_obstacles = 20, display_maps = False):
   @param display_maps: Display generated maps, one by one (default is False)
 
   Returns:
-    An array of generated maps
+    A list of generated maps
   """
 
-  images_folder_path = './map/images/'
+  images_folder_path = './ai_robotics_final_project/map/images/'
   maps = []
   num_maps = number_maps
   num_obstacles = number_obstacles
@@ -60,77 +56,7 @@ def generateMaps(number_maps = 1, number_obstacles = 20, display_maps = False):
 
     # Generate random obstacles
     for i in range(num_obstacles):
-      # Randomly generate coordinates
-      x = random.randint(50, 350)
-      y = random.randint(50, 350)
-
-      radius = random.randint(10, 50)
-      color = (0, 0, 0)
-      # circle = 0, ellipse = 1, triangle = 2, rectangle/square = 3
-      shape = random.randint(0, 3)
-
-      if shape == 0:
-        # Draw a circle
-        orientation_x = random.randint(0, 2)
-        orientation_y = random.randint(0, 2)
-
-        if orientation_x == 1:
-          x = x - math.floor(radius / 2)
-        elif orientation_x == 2:
-          x = x + math.floor(radius / 2)
-
-        if orientation_y == 1:
-          y = y + math.floor(radius / 2)
-        elif orientation_y == 2:
-          y = y - math.floor(radius / 2)
-
-        cv2.circle(map, (x, y), radius, color, -1)
-      elif shape == 1:
-        # Draw an ellipse
-        axes_height = random.randint(10, 50)
-        axes_width = random.randint(10, 50)
-        orientation_x = random.randint(0, 2)
-        orientation_y = random.randint(0, 2)
-
-        if orientation_x == 1:
-          x = x - math.floor(axes_width / 2)
-        elif orientation_x == 2:
-          x = x + math.floor(axes_width / 2)
-
-        if orientation_y == 1:
-          y = y + math.floor(axes_height / 2)
-        elif orientation_y == 2:
-          y = y - math.floor(axes_height / 2)
-        
-        cv2.ellipse(map, (x, y), (axes_width, axes_height), 0, 0, 360, color, -1)
-      elif shape == 2:
-        # Draw a triangle
-        points = np.array(
-          [
-            [x, y],
-            [x + radius, y],
-            [x + radius / 2, y - radius]
-          ],
-          np.int32
-        )
-        points = points.reshape((-1, 1, 2))
-        cv2.fillPoly(map, [points], color)
-      elif shape == 3:
-        # Draw a rectangle
-        orientation_x = random.randint(0, 1)
-        orientation_y = random.randint(0, 1)
-        size_x = radius * random.randint(1, 3)
-        size_y = radius * random.randint(1, 3)
-        x2 = x + size_x
-        y2 = y - size_y
-
-        if orientation_x == 0:
-          x2 = x - size_x
-
-        if orientation_y == 0:
-          y2 = y + size_y
-        
-        cv2.rectangle(map, (x, y), (x2, y2), color, -1)
+      generateObstacle(map)
 
     if should_display_maps:
       # Display the image
@@ -140,8 +66,100 @@ def generateMaps(number_maps = 1, number_obstacles = 20, display_maps = False):
 
     # Save the image
     cv2.imwrite(images_folder_path + "map" + map_number + ".png", map)
-    maps.append(map)
+    maps.append(np.array(map))
   
   return maps
+
+def generateObstacle(map, x_coord = -1, y_coord = -1) -> None:
+  """
+  Randomly obstacle on the map, if x_coord and y_coord are no provided,
+  otherwise generate an obstacle at the specified coordinates.
+
+  @param map: The map to generate the obstacle on
+  @param x_coord: The x-coordinate of the obstacle (default is -1)
+  @param y_coord: The y-coordinate of the obstacle (default is -1)
+  """
+  x = x_coord
+  y = y_coord
+
+  if x_coord == -1 or y_coord == -1:
+    # Randomly generate coordinates
+    x = random.randint(50, 350)
+    y = random.randint(50, 350)
+
+  radius = random.randint(10, 50)
+  color = (0, 0, 0)
+  # circle = 0, ellipse = 1, triangle = 2, rectangle/square = 3
+  shape = random.randint(0, 3)
+
+  if shape == 0:
+    # Draw a circle
+    orientation_x = random.randint(0, 2)
+    orientation_y = random.randint(0, 2)
+
+    if orientation_x == 1:
+      x = x - math.floor(radius / 2)
+    elif orientation_x == 2:
+      x = x + math.floor(radius / 2)
+
+    if orientation_y == 1:
+      y = y + math.floor(radius / 2)
+    elif orientation_y == 2:
+      y = y - math.floor(radius / 2)
+
+    cv2.circle(map, (x, y), radius, color, -1)
+  elif shape == 1:
+    # Draw an ellipse
+    axes_height = random.randint(10, 50)
+    axes_width = random.randint(10, 50)
+    orientation_x = random.randint(0, 2)
+    orientation_y = random.randint(0, 2)
+
+    if orientation_x == 1:
+      x = x - math.floor(axes_width / 2)
+    elif orientation_x == 2:
+      x = x + math.floor(axes_width / 2)
+
+    if orientation_y == 1:
+      y = y + math.floor(axes_height / 2)
+    elif orientation_y == 2:
+      y = y - math.floor(axes_height / 2)
+    
+    cv2.ellipse(map, (x, y), (axes_width, axes_height), 0, 0, 360, color, -1)
+  elif shape == 2:
+    # Draw a triangle
+    points = np.array(
+      [
+        [x, y],
+        [x + radius, y],
+        [x + radius / 2, y - radius]
+      ],
+      np.int32
+    )
+    points = points.reshape((-1, 1, 2))
+    cv2.fillPoly(map, [points], color)
+  elif shape == 3:
+    # Draw a rectangle
+    orientation_x = random.randint(0, 1)
+    orientation_y = random.randint(0, 1)
+    size_x = radius * random.randint(1, 3)
+    size_y = radius * random.randint(1, 3)
+    x2 = x + size_x
+    y2 = y - size_y
+
+    if orientation_x == 0:
+      x2 = x - size_x
+
+    if orientation_y == 0:
+      y2 = y + size_y
+    
+    cv2.rectangle(map, (x, y), (x2, y2), color, -1)
+
+# Parse command line arguments
+parser = argparse.ArgumentParser()
+parser.add_argument('-d', '--display', help='Display generated maps, one by one', type=bool, default=False)
+parser.add_argument('-nm', '--num_maps', help='The number of maps to generate', type=int, default=1)
+parser.add_argument('-no', '--num_obstacles', help='The number of obstacles to generate', type=int, default=20)
+args = parser.parse_args()
 
 generateMaps(args.num_maps, args.num_obstacles, args.display)
