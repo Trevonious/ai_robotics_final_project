@@ -3,32 +3,31 @@ import cv2
 import os
 import sys
 import time
-import numpy as np
 
 sys.path.append('./ai_robotics_final_project')
 
 from d_star.d_star import dStar, selectPoints
-from RRT.rrt import RRT  # Ensure RRT logic is in rrt.py under rrt module
 from map.generate_maps import generateMaps
+from RRT.rrt import RRT  # Ensure RRT logic is in rrt.py under rrt module
 
 # Parse command line arguments
 parser = argparse.ArgumentParser()
+parser.add_argument('-d', '--display', help='Display generated maps, one by one', type=bool, default=False)
 parser.add_argument('-nm', '--num_maps', help='The number of maps to generate', type=int, default=1)
 parser.add_argument('-no', '--num_obstacles', help='The number of obstacles to generate', type=int, default=20)
 parser.add_argument('-tr', '--test_run', help='Whether or not this is a test run', type=bool, default=False)
 parser.add_argument('-v', '--verbose', help='Verbose output', type=bool, default=False)
-parser.add_argument('-d', '--display', help='Display generated maps one by one', type=bool, default=False)
 args = parser.parse_args()
 
 # Main execution
 solutions_folder_path = './ai_robotics_final_project/map/images/solutions/'
 map_number = 1
 maps = generateMaps(
-    display_maps=args.display,
-    number_maps=args.num_maps,
-    number_obstacles=args.num_obstacles,
-    test_run=args.test_run,
-    verbose=args.verbose
+    args.display,
+    args.num_maps,
+    args.num_obstacles,
+    args.test_run,
+    args.verbose
 )
 
 for map in maps:
@@ -72,12 +71,12 @@ for map in maps:
         rrt_map[point[1], point[0]] = (0, 255, 0)  # Path in green
     cv2.imwrite(solutions_folder_path + f"map{map_number}_rrt_solution.png", rrt_map)
 
-    # Always display visualization
-    cv2.imshow(f'Map {map_number} - D* Path', dstar_map)
-    cv2.imshow(f'Map {map_number} - RRT Path', rrt_map)
-    print("Press any key to continue to the next map...")
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    # Display results
+    if args.display:
+        cv2.imshow('D* Path', dstar_map)
+        cv2.imshow('RRT Path', rrt_map)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
 
     # Print time comparison
     print(f"Time Comparison for Map {map_number}:")
