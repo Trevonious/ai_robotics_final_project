@@ -1,36 +1,39 @@
 # Prerequisites
 
-  - Install Python 3.13.0
-  - Ensure the necessary modules are installed (cv2, numpy, etc.)
+- Install Python 3.13.0
+- Ensure the necessary modules are installed (cv2, numpy, etc.)
 
 # Instructions
 
-In cmd or terminal window, navigate to the directory above the project (cd ..)
+In cmd or terminal window, navigate to the directory above the project (_cd .._)
 and run the following command:
 
-  py -m ai_robotics_final_project
+- _py -m ai_robotics_final_project_
 
 The flags available are:
 
-  -dim <True/False> or --display_initial_maps <True/False>: Whether or not to display the initially generated maps, one by one (default=False)
+- _-dim \<True/False\>_ or _--display_initial_maps \<True/False\>_: Whether or not to display the initially generated maps, one by one (default=False)
 
-  -ms <number> or --map_size <number>: The length and width of the map, in pixels (default=400; min=100; max=1000)
+- _-ms \<number\>_ or --map_size \<number\>: The length and width of the map, in pixels (default=400; min=100; max=1000)
 
-  -ndo <number> or --num_dynamic_obstacles <number>: The number of initial obstacles to generate (default=2; min=1; max=0.5% of map_size)
+- _-ndo \<number\>_ or _--num_dynamic_obstacles \<number\>_: The number of initial obstacles to generate (default=2; min=1; max=0.5% of map_size)
 
-  -nio <number> or --num_initial_obstacles <number>: The number of initial obstacles to generate (default=20; min=1; max=5% of map_size)
+- _-nio \<number\>_ or _--num_initial_obstacles \<number\>_: The number of initial obstacles to generate (default=20; min=1; max=5% of map_size)
 
-  -nm <number> or --num_maps <number>: The number of maps to generate (default=1)
+- _-nm \<number\>_ or _--num_maps \<number\>_: The number of maps to generate (default=1)
 
-  -v <True/False> or --verbose <True/False>: Whether or not to print more detailed output in the console (default=False)
+- _-rmi \<number\>_ or _--rrt_max_iterations \<number\>_: The maximum iterations for the RRT algorithm (default=2500; min=1,000; max=5,000)
+
+- _-rss \<number\>_ or _--rrt_step_size \<number\>_: The step size for the RRT algorithm (default=4; min=1; max=1% of map_size) 
+
+- _-v \<True/False\>_ or _--verbose \<True/False\>_: Whether or not to print more detailed output in the console (default=False)
 
 Below are examples of running with flags:
 
-  py -m ai_robotics_final_project -v True
+- _py -m ai_robotics_final_project -v True_
 
-  py -m ai_robotics_final_project -dim True -nio 15
+- _py -m ai_robotics_final_project -dim True -nio 15_
 
-  py -m ai_robotics_final_project -dim True -ms 400 -ndo 2 -nio 20 -nm 5 -v True
-  
+- _py -m ai_robotics_final_project -dim True -ms 1000 -ndo 5 -nio 50 -nm 5 -rmi 5000 -rss 10 -v True_
 
 When you close a map image, the program will continue execution.
