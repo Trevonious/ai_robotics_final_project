@@ -3,100 +3,120 @@ import numpy as np
 import random
 import time
 
-# Select random start and goal in free space
-def selectPoints(map, verbose: bool = False) -> tuple:
-    """
-    Selects random start and goal points in the free (white) spaces of the map.
-
-    @param map: The map image with obstacles
-    @param verbose: Whether or not to print verbose output (default is False)
-    @return: The start and goal points in the map
-    """
-    print("Randomly selecting start and goal points...")
-    
-    free_spaces = np.argwhere(map == 255)
-    free_spaces = [(pt[1], pt[0]) for pt in free_spaces]
-    
-    start, goal = random.sample(free_spaces, 2)
-    # Start point in green
-    cv2.circle(map, start, 10, (0, 255, 0), -1)
-    # Goal point in blue
-    cv2.circle(map, goal, 10, (255, 0, 0), -1)
-    
-    print("Start and goal points selected!")
-
-    if verbose:
-        print(f"Start point (green): {start}")
-        print(f"Goal point (blue): {goal}")
-
-    return start, goal
-
 # Check if the line between two points intersects obstacles
-def isCollisionFree(map, point1, point2):
-    line = np.linspace(point1, point2, num=100, dtype=int)
-    for x, y in line:
-        if map[y, x] == 0:  # Black pixel indicates obstacle
-            return False
-    return True
+def isCollisionFree(
+  map: list,
+  point1: tuple,
+  point2: tuple,
+  verbose=False
+) -> bool:
+  """
+  Checks if the line between two points is collision-free.
 
-def RRT(map, start, goal, max_iterations=1000, step_size=10, verbose=False):
-    """
-    Implements the Rapidly-Exploring Random Tree (RRT) algorithm.
+  @param map: The map image with obstacles
+  @param point1: The first point
+  @param point2: The second point
+  @param verbose: Whether or not to print verbose output (default is False)
+  @return: True if the line is collision-free, False otherwise
+  """
+  
+  line = np.linspace(point1, point2, num=100, dtype=int)
 
-    @param map: The map image with obstacles
-    @param start: The start position
-    @param goal: The goal position
-    @param max_iterations: Maximum number of iterations for the RRT
-    @param step_size: The step size for tree expansion
-    @param verbose: Whether or not to print verbose output
-    @return: The path found by the RRT algorithm
-    """
-    rows, cols = map.shape
-    nodes = [start]
-    parent = {start: None}
-    start_time = time.time()
+  for x, y in line:
 
-    for _ in range(max_iterations):
-        # Random point in map
-        rand_point = (random.randint(0, cols - 1), random.randint(0, rows - 1))
-        # Find nearest node
-        nearest_node = min(nodes, key=lambda node: np.linalg.norm(np.array(node) - np.array(rand_point)))
+    if str(map[y][x]) == "[0 0 0]":  # Black pixel indicates obstacle
 
-        # Steer towards the random point
-        direction = np.array(rand_point) - np.array(nearest_node)
-        length = np.linalg.norm(direction)
-        if length == 0:
-            continue
-        direction = direction / length
-        new_point = tuple((np.array(nearest_node) + step_size * direction).astype(int))
+      if verbose:
+        print(f"Collision detected at ({x}, {y})")
 
-        # Check collision
-        if 0 <= new_point[0] < cols and 0 <= new_point[1] < rows and isCollisionFree(map, nearest_node, new_point):
-            nodes.append(new_point)
-            parent[new_point] = nearest_node
-            # Draw on map for visualization
-            cv2.line(map, nearest_node, new_point, (0, 255, 255), 1)
+      return False
+  
+  return True
 
-            # Check if goal is reached
-            if np.linalg.norm(np.array(new_point) - np.array(goal)) < step_size:
-                parent[goal] = new_point
-                end_time = time.time()
-                print("Goal reached in", end_time - start_time, "seconds!")
-                break
+def rrt(
+  map: list,
+  start: cv2.typing.Point,
+  goal: cv2.typing.Point,
+  max_iterations: int = 10000,
+  step_size: int = 10,
+  verbose=False
+) -> list:
+  """
+  Implements the Rapidly-Exploring Random Tree (RRT) algorithm.
 
-    # Reconstruct path
-    path = []
-    if goal in parent:
-        current = goal
-        while current is not None:
-            path.append(current)
-            current = parent[current]
-        path.reverse()
-    else:
-        print("Failed to find a path.")
+  @param map: The map image with obstacles
+  @param start: The start position
+  @param goal: The goal position
+  @param max_iterations: Maximum number of iterations for the RRT algorithm (default is 1000)
+  @param step_size: The step size for tree expansion (default is 10)
+  @param verbose: Whether or not to print verbose output (default is False)
+  @return: The path found by the RRT algorithm
+  """
+
+  rrt_execution_time = 0
+  start_time = time.time()
+  rows, cols, rgb = map.shape
+  nodes = [start]
+  parent = {start: None}
+
+  for _ in range(max_iterations):
+    # Random point in map
+    rand_point = (random.randint(0, cols - 1), random.randint(0, rows - 1))
+    # Find nearest node
+    nearest_node = min(nodes, key=lambda node: np.linalg.norm(np.array(node) - np.array(rand_point)))
+    # Steer towards the random point
+    direction = np.array(rand_point) - np.array(nearest_node)
+    length = np.linalg.norm(direction)
+
+    if length == 0:
+      continue
+
+    direction = direction / length
+    new_point = tuple((np.array(nearest_node) + step_size * direction).astype(int))
+
+    # Check collision
+    if (
+      0 <= new_point[0] < cols
+      and 0 <= new_point[1] < rows
+      and isCollisionFree(map, nearest_node, new_point)
+    ):
+      nodes.append(new_point)
+      parent[new_point] = nearest_node
+      # Draw on map for visualization
+      cv2.line(map, nearest_node, new_point, (0, 155, 255), 1)
+
+      # Check if goal is reached
+      if np.linalg.norm(np.array(new_point) - np.array(goal)) < step_size:
+        parent[goal] = new_point
+        # Record execution time
+        end_time = time.time()
+        rrt_execution_time = end_time - start_time
+        break
+
+  # Reconstruct path
+  path = []
+
+  if goal in parent:
+    current = goal
+
+    while current is not None:
+      path.append(current)
+      current = parent[current]
+
+    path.reverse()
+
+    print("Alternative path found!")
 
     if verbose:
-        print("Path length:", len(path))
+      print("Path length:", len(path))
+    
+  else:
+    # Record execution time
+    end_time = time.time()
+    rrt_execution_time = end_time - start_time
+    print("No path found!")
 
-    return path
+  print("RRT execution time:", round(rrt_execution_time, 6), "seconds")
+
+  return path
 

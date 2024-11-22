@@ -1,89 +1,115 @@
-import argparse
-import cv2
-import os
 import sys
 import time
-import numpy as np
 
 sys.path.append('./ai_robotics_final_project')
 
-from d_star.d_star import dStar, selectPoints
-from RRT.rrt import RRT  # Ensure RRT logic is in rrt.py under rrt module
-from map.generate_maps import generateMaps
+from d_star.d_star import *
+from map.generate_maps import *
+from rrt.rrt import rrt
+from utils.args import parseArgs
+from utils.points import drawPathPoints, selectInitialPoints
+
+# See README.md for instructions on how to run this script.
 
 # Parse command line arguments
-parser = argparse.ArgumentParser()
-parser.add_argument('-nm', '--num_maps', help='The number of maps to generate', type=int, default=1)
-parser.add_argument('-no', '--num_obstacles', help='The number of obstacles to generate', type=int, default=20)
-parser.add_argument('-tr', '--test_run', help='Whether or not this is a test run', type=bool, default=False)
-parser.add_argument('-v', '--verbose', help='Verbose output', type=bool, default=False)
-parser.add_argument('-d', '--display', help='Display generated maps one by one', type=bool, default=False)
-args = parser.parse_args()
+args = parseArgs()
+display_initial_maps = args.display_initial_maps
+map_size = args.map_size
+num_dynamic_obstacles = args.num_dynamic_obstacles
+num_initial_obstacles = args.num_initial_obstacles
+num_maps = args.num_maps
+rrt_max_iterations = args.rrt_max_iterations
+rrt_step_size = args.rrt_step_size
+verbose = args.verbose
 
 # Main execution
-solutions_folder_path = './ai_robotics_final_project/map/images/solutions/'
-map_number = 1
+d_star_color = (0, 0, 255) # Red
+rrt_color = (0, 255, 255) # Yellow
+start_time = time.time()
+total_execution_time = 0
+map_number = 0
 maps = generateMaps(
-    display_maps=args.display,
-    number_maps=args.num_maps,
-    number_obstacles=args.num_obstacles,
-    test_run=args.test_run,
-    verbose=args.verbose
+  display_initial_maps,
+  map_size,
+  num_maps,
+  num_initial_obstacles,
+  verbose
 )
 
 for map in maps:
-    print(f"Processing Map {map_number}...")
+  map_number += 1
+  start, goal = selectInitialPoints(map, verbose)
+  path = dStar(map, start, goal, verbose)
+  # Record execution time
+  end_time = time.time()
+  map_solution_time = end_time - start_time
 
-    # Ensure the map is grayscale (RRT requires a 2D array)
-    if len(map.shape) == 3:  # Check if the map has 3 channels (color image)
-        grayscale_map = cv2.cvtColor(map, cv2.COLOR_BGR2GRAY)
+  if len(path) != 0:
+    drawPathPoints(map, path, d_star_color, verbose)
+    displayMap(map, "initial_solution", map_number, verbose)
+
+    if len(path) < math.floor(map_size * 0.05):
+      
+      print("Path too short to generate dynamic obstacles. Skipping dynamic obstacle simulation...")
+
     else:
-        grayscale_map = map.copy()
 
-    # Convert the map to BGR format for D* (requires 3D input)
-    dstar_map_input = cv2.cvtColor(grayscale_map, cv2.COLOR_GRAY2BGR)
+      if num_dynamic_obstacles == math.floor(map_size * 0.005):
 
-    # Select start and goal points
-    start, goal = selectPoints(grayscale_map, args.verbose)
+        if len(path) < math.floor(map_size * 0.15):
+          num_dynamic_obstacles = 1
 
-    # Execute D* algorithm
-    print("Executing D* algorithm...")
-    dstar_start_time = time.time()
-    dstar_path = dStar(dstar_map_input.copy(), start, goal, args.verbose)
-    dstar_time = time.time() - dstar_start_time
-    print(f"D* completed in {dstar_time:.2f} seconds.")
+          print("Path too short. Reduced number of dynamic obstacles to 1.")
 
-    # Visualize D* path
-    dstar_map = dstar_map_input.copy()
-    for point in dstar_path:
-        dstar_map[point[1], point[0]] = (0, 0, 255)  # Path in red
-    cv2.imwrite(solutions_folder_path + f"map{map_number}_dstar_solution.png", dstar_map)
+        elif len(path) < math.floor(map_size * 0.4):
+          num_dynamic_obstacles = math.floor(num_dynamic_obstacles / 2)
 
-    # Execute RRT algorithm
-    print("Executing RRT algorithm...")
-    rrt_start_time = time.time()
-    rrt_path = RRT(grayscale_map.copy(), start, goal, verbose=args.verbose)
-    rrt_time = time.time() - rrt_start_time
-    print(f"RRT completed in {rrt_time:.2f} seconds.")
+          print(f"Path too short. Reduced number of dynamic obstacles to {num_dynamic_obstacles}.")
+      
+      print("Simulating dynamic obstacle(s)...")
 
-    # Visualize RRT path
-    rrt_map = cv2.cvtColor(grayscale_map.copy(), cv2.COLOR_GRAY2BGR)  # Convert back to color for visualization
-    for point in rrt_path:
-        rrt_map[point[1], point[0]] = (0, 255, 0)  # Path in green
-    cv2.imwrite(solutions_folder_path + f"map{map_number}_rrt_solution.png", rrt_map)
+      # Generate dynamic obstacles at selected point
+      generateDynamicObstacle(
+        map,
+        path,
+        start,
+        goal,
+        num_dynamic_obstacles,
+        verbose
+      )
 
-    # Always display visualization
-    cv2.imshow(f'Map {map_number} - D* Path', dstar_map)
-    cv2.imshow(f'Map {map_number} - RRT Path', rrt_map)
-    print("Press any key to continue to the next map...")
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+      # Display the generated map with dynamic obstacles
+      displayMap(map, "dynamic_obstacle", map_number, verbose)
 
-    # Print time comparison
-    print(f"Time Comparison for Map {map_number}:")
-    print(f"  D*:  {dstar_time:.2f} seconds")
-    print(f"  RRT: {rrt_time:.2f} seconds")
+      print("Executing RRT...")
 
-    map_number += 1
+      start_time = time.time()
 
-print("Processing complete.")
+      rrt_path = rrt(
+        map,
+        start,
+        goal,
+        rrt_max_iterations,
+        rrt_step_size,
+        verbose
+      )
+      # Record execution time
+      end_time = time.time()
+      map_solution_time += end_time - start_time
+      
+      if len(rrt_path) != 0:
+        #drawPathPoints(map, rrt_path, rrt_color, verbose)
+        displayMap(map, "dynamic_obstacle_solution", map_number, verbose)
+      else:
+        print("There is no path between the start and goal points for this map.")
+
+    if verbose:
+      print(f"Map {map_number} Solution Time: {round(map_solution_time, 6)} seconds")
+  else:
+    print("There is no path between the start and goal points for this map.")
+  
+  total_execution_time += map_solution_time
+
+  print(f"Execution completed for Map {map_number}!")
+
+print(f"Total Execution Time - {map_number} Map(s): {round(total_execution_time, 6)} seconds")

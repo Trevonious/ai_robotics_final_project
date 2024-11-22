@@ -4,8 +4,7 @@ __pycache__/
 *$py.class
 
 # Project files
-map/images/*.png
-map/images/solutions/*.png
+map/images/*/*.png
 
 # VS Code
 .vscode/*

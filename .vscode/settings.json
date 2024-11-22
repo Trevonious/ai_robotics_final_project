@@ -5,7 +5,6 @@
     "./graph",
     "./map",
     "./rrt",
-    "./solutions",
-    "./tests",
+    "./utils",
   ]
 }
