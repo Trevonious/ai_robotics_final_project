@@ -3,9 +3,9 @@ import time
 
 sys.path.append('./ai_robotics_final_project')
 
-from algorithm.d_star import executeDStar
-from algorithm.rrt import executeRRT
-from map.generate_maps import *
+from algorithms.d_star import executeDStar
+from algorithms.rrt import executeRRT
+from maps.generate_maps import *
 from utils.args import parseArgs
 from utils.points import drawPathPoints, selectInitialPoints
 

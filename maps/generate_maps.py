@@ -229,7 +229,7 @@ def saveMap(
   if verbose:
     print(f"Saving {title}...")
 
-  images_folder_path = './ai_robotics_final_project/map/images/'
+  images_folder_path = './ai_robotics_final_project/maps/images/'
   map_filename = "map" + str(number)
 
   if filename_suffix != "":
