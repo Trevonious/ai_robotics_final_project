@@ -31,6 +31,7 @@ def validateArgs(args: argparse.Namespace) -> None:
   @param args: The command line arguments to validate.
   """
 
+  print()
   print("Validating arguments...")
   
   if args.map_size < 100:
@@ -93,3 +94,4 @@ def validateArgs(args: argparse.Namespace) -> None:
     print("RRT step size is too large. Using maximum value of 1%% of map size (" + str(rrt_step_size) + ").")
 
   print("Arguments validated successfully!")
+  print()

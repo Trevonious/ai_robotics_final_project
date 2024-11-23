@@ -5,9 +5,9 @@ import time
 
 sys.path.append('./ai_robotics_final_project')
 
-from utils.points import heuristic
+from utils.points import drawInitialPoints, heuristic
 
-def dStar(
+def executeDStar(
   map: list,
   start: cv2.typing.Point,
   goal: cv2.typing.Point,
@@ -89,12 +89,32 @@ def dStar(
 
     print("No path found!")
   
-  # Draw start point in green
-  cv2.circle(map, (start[0], start[1]), 10, (0, 255, 0), -1)
-  # Draw goal point in blue
-  cv2.circle(map, (goal[0], goal[1]), 10, (255, 0, 0), -1)
+  drawInitialPoints(map, start, goal)
 
-  if verbose:
-    print("D* execution time:", round(d_star_execution_time, 6), "seconds")
+  print("D* execution time:", round(d_star_execution_time, 6), "seconds")
+  print()
+
+  return path
+
+def executeDStarReplanning(
+  map: list,
+  path: list,
+  start: cv2.typing.Point,
+  goal: cv2.typing.Point,
+  verbose: bool = False
+) -> list:
+  """
+  D* replanning algorithm to find the shortest path in the given map, using RRT
+  to get around obstacles.
+
+  @param map: The map image with obstacles
+  @param path: The path found by the D* algorithm
+  @param start: The start position
+  @param goal: The goal position
+  @param verbose: Whether or not to print verbose output (default is False)
+  @return: The path found by the D* replanning algorithm
+  """
+
+  #TODO: Implement D* replanning
 
   return path

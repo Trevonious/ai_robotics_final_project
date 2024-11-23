@@ -18,3 +18,4 @@ def deleteImages(verbose: bool = False) -> None:
 
   if verbose:
     print("Old images deleted successfully!")
+    print()

@@ -15,4 +15,6 @@ def getFormattedMapTitle(filename_suffix: str, number: int) -> str:
     # Capitalize the first letter of each word
     title += " - " + suffix.title()
   
+  title = title.replace("Rrt", "RRT")
+  
   return title

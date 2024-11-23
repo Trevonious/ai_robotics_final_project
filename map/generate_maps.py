@@ -8,7 +8,7 @@ import time
 sys.path.append('./ai_robotics_final_project')
 
 from utils.files import deleteImages
-from utils.points import drawPathPoints, selectPathPoint
+from utils.points import drawInitialPoints, drawPathPoints, selectPathPoint
 from utils.strings import getFormattedMapTitle
 
 def generateMaps(
@@ -71,6 +71,7 @@ def generateMaps(
     print(f"Total Map Generation Time: {round(total_map_generation_time, 6)} seconds")
   
   print("Maps generated successfully!")
+  print()
   
   return maps
 
@@ -263,13 +264,15 @@ def generateDynamicObstacle(
 
   original_path_length = len(path)
   path_color = (0, 0, 255)
+  path_covered = path.copy()
+  path_points_covered = 0
 
   print(f"Generating {num_dynamic_obstacles} dynamic obstacles...")
 
   for i in range(num_dynamic_obstacles):
     obstacle_number = i + 1
     # Select a random point along the path
-    dynamicObstacleCoords = selectPathPoint(path, verbose)
+    dynamicObstacleCoords = selectPathPoint(path_covered, verbose)
 
     if verbose:
       print(f"Generating dynamic obstacle {obstacle_number}...")
@@ -286,18 +289,17 @@ def generateDynamicObstacle(
     current_path_points[:, [1, 0]] = current_path_points[:, [0, 1]]
     # Convert to list of tuples
     current_path_points = list(tuple(point) for point in current_path_points)
-    path_points_covered = len(path) - len(current_path_points)
-    # Update path to keep points that are not covered by the dynamic obstacles
-    path = [point for point in path if point in current_path_points]
+    path_points_covered = len(path_covered) - len(current_path_points)
+    # Update path to keep points that are not covered by the dynamic obstacles,
+    # while preserving the order of the points from the original path
+    path_covered = [point for point in path_covered if point in current_path_points]
 
     if verbose:
       print(f"Path points covered by dynamic obstacle {obstacle_number}: {path_points_covered}")
   
-  # Redraw start point to prevent it from being hidden by dynamic obstacle
-  cv2.circle(map, (start[0], start[1]), 10, (0, 255, 0), -1)
-  # Redraw goal point to prevent it from being hidden by dynamic obstacle
-  cv2.circle(map, (goal[0], goal[1]), 10, (255, 0, 0), -1)
-  drawPathPoints(map, path, path_color, verbose)
+  # Redraw start/goal points to prevent them from being hidden by obstacle
+  drawInitialPoints(map, start, goal)
+  drawPathPoints(map, path_covered, path_color, verbose)
 
   if verbose:
     print(f"Total path points covered by new dynamic obstacles: {original_path_length - len(path)}")

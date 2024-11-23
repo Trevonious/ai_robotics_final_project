@@ -1,6 +1,21 @@
+import cv2
 import math
-import random
 import numpy as np
+import random
+
+def drawInitialPoints(map: list, start: tuple, goal: tuple) -> None:
+  """
+  Draws the start and goal points on the map.
+
+  @param map: The map image with obstacles
+  @param start: The start point
+  @param goal: The goal point
+  """
+
+  # Draw start point in green
+  cv2.circle(map, (start[0], start[1]), 10, (0, 255, 0), -1)
+  # Draw goal point in blue
+  cv2.circle(map, (goal[0], goal[1]), 10, (255, 0, 0), -1)
 
 def drawPathPoints(map: list, path: list, color: tuple, verbose: bool = False) -> None:
   """
@@ -52,9 +67,13 @@ def selectInitialPoints(map: list, verbose: bool = False) -> tuple:
   start, goal = random.sample(list(free_spaces), 2)
 
   if verbose:
-    print("Start and goal points selected successfully!")
     print("Start point (green): (" + str(start[0]) + ", " + str(start[1]) + ")")
     print("Goal point (blue): (" + str(goal[0]) + ", " + str(goal[1]) + ")")
+  
+  drawInitialPoints(map, start, goal)
+  
+  print("Start and goal points selected successfully!")
+  print()
 
   return (start[0], start[1]), (goal[0], goal[1])
 

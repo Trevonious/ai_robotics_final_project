@@ -7,8 +7,7 @@ import time
 def isCollisionFree(
   map: list,
   point1: tuple,
-  point2: tuple,
-  verbose=False
+  point2: tuple
 ) -> bool:
   """
   Checks if the line between two points is collision-free.
@@ -16,7 +15,6 @@ def isCollisionFree(
   @param map: The map image with obstacles
   @param point1: The first point
   @param point2: The second point
-  @param verbose: Whether or not to print verbose output (default is False)
   @return: True if the line is collision-free, False otherwise
   """
   
@@ -25,15 +23,11 @@ def isCollisionFree(
   for x, y in line:
 
     if str(map[y][x]) == "[0 0 0]":  # Black pixel indicates obstacle
-
-      if verbose:
-        print(f"Collision detected at ({x}, {y})")
-
       return False
   
   return True
 
-def rrt(
+def executeRRT(
   map: list,
   start: cv2.typing.Point,
   goal: cv2.typing.Point,
@@ -53,13 +47,15 @@ def rrt(
   @return: The path found by the RRT algorithm
   """
 
+  print("Executing RRT algorithm...")
+
   rrt_execution_time = 0
   start_time = time.time()
   rows, cols, rgb = map.shape
   nodes = [start]
   parent = {start: None}
 
-  for _ in range(max_iterations):
+  for i in range(max_iterations):
     # Random point in map
     rand_point = (random.randint(0, cols - 1), random.randint(0, rows - 1))
     # Find nearest node
@@ -83,11 +79,17 @@ def rrt(
       nodes.append(new_point)
       parent[new_point] = nearest_node
       # Draw on map for visualization
-      cv2.line(map, nearest_node, new_point, (0, 155, 255), 1)
+      cv2.line(map, nearest_node, new_point, (0, 155, 255), 1) # Orange
 
       # Check if goal is reached
       if np.linalg.norm(np.array(new_point) - np.array(goal)) < step_size:
+        cv2.line(map, new_point, goal, (0, 155, 255), 1) # Orange
         parent[goal] = new_point
+
+        if verbose:
+          
+          print(f"Goal reached in {i} iterations!")
+
         # Record execution time
         end_time = time.time()
         rrt_execution_time = end_time - start_time
@@ -117,6 +119,7 @@ def rrt(
     print("No path found!")
 
   print("RRT execution time:", round(rrt_execution_time, 6), "seconds")
+  print()
 
   return path
 
