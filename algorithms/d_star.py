@@ -26,12 +26,12 @@ def executeDStar(
   print("Executing D* algorithm...")
 
   d_star_execution_time = 0
-  start_time = time.time()
   rows, cols, rgb = map.shape
   open_list = []
   heapq.heappush(open_list, (0, start))  # (cost, position)
   came_from = {}
   cost_so_far = { start: 0 }
+  start_time = time.time()
 
   while open_list:
     current_cost, current = heapq.heappop(open_list)
@@ -93,28 +93,5 @@ def executeDStar(
 
   print("D* execution time:", round(d_star_execution_time, 6), "seconds")
   print()
-
-  return path
-
-def executeDStarReplanning(
-  map: list,
-  path: list,
-  start: cv2.typing.Point,
-  goal: cv2.typing.Point,
-  verbose: bool = False
-) -> list:
-  """
-  D* replanning algorithm to find the shortest path in the given map, using RRT
-  to get around obstacles.
-
-  @param map: The map image with obstacles
-  @param path: The path found by the D* algorithm
-  @param start: The start position
-  @param goal: The goal position
-  @param verbose: Whether or not to print verbose output (default is False)
-  @return: The path found by the D* replanning algorithm
-  """
-
-  #TODO: Implement D* replanning
 
   return path

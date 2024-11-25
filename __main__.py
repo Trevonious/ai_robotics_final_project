@@ -4,10 +4,11 @@ import time
 sys.path.append('./ai_robotics_final_project')
 
 from algorithms.d_star import executeDStar
+from algorithms.replanning import executeReplanning
 from algorithms.rrt import executeRRT
 from maps.generate_maps import *
 from utils.args import parseArgs
-from utils.points import drawPathPoints, selectInitialPoints
+from utils.points import clearPaths, drawPathPoints, selectInitialPoints
 
 # See README.md for instructions on how to run this script.
 
@@ -20,6 +21,7 @@ num_initial_obstacles = args.num_initial_obstacles
 num_maps = args.num_maps
 rrt_max_iterations = args.rrt_max_iterations
 rrt_step_size = args.rrt_step_size
+replanning_threshold = args.replanning_threshold
 verbose = args.verbose
 
 # Main execution
@@ -52,10 +54,20 @@ for map in maps:
   if len(d_star_solution_path) != 0:
     drawPathPoints(d_star_map, d_star_solution_path, d_star_path_color, verbose)
     displayMap(d_star_map, "initial_solution", map_number, verbose)
+
     print()
 
     # RRT Algorithm
     start_time = time.time()
+    # TODO: Change RRT to take a list for start and a list for goal
+    # rrt_solution_path = executeRRT(
+    #   initial_rrt_map,
+    #   [start],
+    #   [goal],
+    #   rrt_max_iterations,
+    #   rrt_step_size,
+    #   verbose
+    # )
     rrt_solution_path = executeRRT(
       initial_rrt_map,
       start,
@@ -70,15 +82,17 @@ for map in maps:
     
     if len(rrt_solution_path) != 0:
       displayMap(initial_rrt_map, "rrt_initial_solution", map_number, verbose)
+
       print()
+
     else:
       saveMap(initial_rrt_map, "rrt_initial_failure", map_number, verbose)
+
       print("The RRT algorithm was unable to find a solution using the provided parameters.")
       print()
 
     # Dynamic Obstacle Simulation
     if len(d_star_solution_path) < math.floor(map_size * 0.05):
-      
       print("D* path is too short to generate dynamic obstacles. Skipping dynamic obstacle simulation...")
       print()
 
@@ -111,13 +125,16 @@ for map in maps:
       if display_initial_maps:
         # Display the generated map with dynamic obstacles
         displayMap(d_star_map, "dynamic_obstacle", map_number, verbose)
+
+        print()
+
       else:
         # Save the generated map with dynamic obstacles
         saveMap(d_star_map, "dynamic_obstacle", map_number, verbose)
 
-      dynamic_obstacle_path = d_star_solution_path.copy()
-      # D* Replanning Algorithm
-      start_time = time.time()
+        print()
+
+      replanning_map = d_star_map.copy()
 
       # TODO: Create function to backtrack solution path until collide with an
       # obstacle, then use RRT to get around the obstacle (reaching anywhere on
@@ -135,18 +152,54 @@ for map in maps:
       # remove the path from the diagram, repaint the start/goal points, and
       # then run D* again.
 
+      # Replanning Algorithm
+      start_time = time.time()
+      replanning_solution_path = executeReplanning(
+        replanning_map,
+        d_star_solution_path,
+        replanning_threshold,
+        verbose
+      )
       # Record execution time
       end_time = time.time()
       map_solution_time += end_time - start_time
       
-      if len(dynamic_obstacle_path) != 0:
-        displayMap(d_star_map, "dynamic_obstacle_solution", map_number, verbose)
-      else:
-        print("There is no path between the start and goal points for this map.")
+      if len(replanning_solution_path) != 0:
+        displayMap(replanning_map, "replanning_solution", map_number, verbose)
+        
         print()
+
+      else:
+        saveMap(replanning_map, "rrt_initial_failure", map_number, verbose)
+
+        print("Replanning failed.")
+        print()
+
+        # Clear paths from the map
+        clearPaths(replanning_map, start, goal, verbose)
+
+        print("Rerunning D* algorithm...")
+
+        start_time = time.time()
+        # Execute D* algorithm with original start and goal
+        replanning_solution_path = executeDStar(replanning_map, start, goal, verbose)
+        # Record execution time
+        end_time = time.time()
+        map_solution_time += end_time - start_time
+
+        if len(replanning_solution_path) != 0:
+          drawPathPoints(replanning_map, replanning_solution_path, d_star_path_color, verbose)
+          displayMap(replanning_map, "replanning_solution", map_number, verbose)
+
+          print()
+
+        else:
+          print("There is no path between the start and goal points for this map.")
+          print()
 
     if verbose:
       print(f"Map {map_number} Solution Time: {round(map_solution_time, 6)} seconds")
+    
   else:
     print("There is no path between the start and goal points for this map.")
     print()

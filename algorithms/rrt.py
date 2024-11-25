@@ -50,16 +50,21 @@ def executeRRT(
   print("Executing RRT algorithm...")
 
   rrt_execution_time = 0
-  start_time = time.time()
   rows, cols, rgb = map.shape
   nodes = [start]
   parent = {start: None}
+  start_time = time.time()
+
+  # TODO: Make more memory efficient, so we can increase max_iterations
 
   for i in range(max_iterations):
     # Random point in map
     rand_point = (random.randint(0, cols - 1), random.randint(0, rows - 1))
     # Find nearest node
-    nearest_node = min(nodes, key=lambda node: np.linalg.norm(np.array(node) - np.array(rand_point)))
+    nearest_node = min(
+      nodes,
+      key=lambda node: np.linalg.norm(np.array(node) - np.array(rand_point))
+    )
     # Steer towards the random point
     direction = np.array(rand_point) - np.array(nearest_node)
     length = np.linalg.norm(direction)
@@ -103,7 +108,7 @@ def executeRRT(
 
     while current is not None:
       path.append(current)
-      current = parent[current]
+      current = parent.pop((current[0], current[1]), parent[current])
 
     path.reverse()
 
@@ -116,6 +121,7 @@ def executeRRT(
     # Record execution time
     end_time = time.time()
     rrt_execution_time = end_time - start_time
+
     print("No path found!")
 
   print("RRT execution time:", round(rrt_execution_time, 6), "seconds")

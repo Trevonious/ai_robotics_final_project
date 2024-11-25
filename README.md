@@ -24,7 +24,9 @@ The flags available are:
 
 - _-rmi \<number\>_ or _--rrt_max_iterations \<number\>_: The maximum iterations for the RRT algorithm (default=2500; min=1,000; max=5,000)
 
-- _-rss \<number\>_ or _--rrt_step_size \<number\>_: The step size for the RRT algorithm (default=4; min=1; max=1% of map_size) 
+- _-rss \<number\>_ or _--rrt_step_size \<number\>_: The step size for the RRT algorithm (default=4; min=1; max=1% of map_size)
+
+- _-rt \<number\>_ or _--replanning_threshold \<number\>_: The replanning encountered obstacle threshold for the D* algorithm (default=4; min=1; max=0.5%% of map_size)
 
 - _-v \<True/False\>_ or _--verbose \<True/False\>_: Whether or not to print more detailed output in the console (default=False)
 

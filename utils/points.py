@@ -45,6 +45,33 @@ def heuristic(a: tuple, b: tuple) -> int:
 
   return abs(a[0] - b[0]) + abs(a[1] - b[1])
 
+def clearPaths(
+  map: list,
+  start: cv2.typing.Point,
+  goal: cv2.typing.Point,
+  verbose: bool = False
+) -> None:
+  """
+  Clears paths from the provided map.
+
+  @param map: The map image with obstacles
+  @param start: The start point
+  @param goal: The goal point
+  @param verbose: Whether or not to print verbose output (default is False)
+  """
+
+  if verbose:
+    print("Clearing paths from map...")
+
+  # Clear path by setting all red pixels to white
+  map[np.all(map == [0, 0, 255], axis=-1)] = [255, 255, 255]
+  # Clear path by setting all orange pixels to white
+  map[np.all(map == [0, 155, 255], axis=-1)] = [255, 255, 255]
+  # Redraw start and goal points
+  drawInitialPoints(map, start, goal)
+
+  if verbose:
+    print("Paths cleared from map successfully!")
 
 def selectInitialPoints(map: list, verbose: bool = False) -> tuple:
   """
