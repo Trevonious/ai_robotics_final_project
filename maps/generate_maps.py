@@ -301,6 +301,8 @@ def generateDynamicObstacle(
   drawInitialPoints(map, start, goal)
   drawPathPoints(map, path_covered, path_color, verbose)
 
+  path_covered = []
+
   if verbose:
     print(f"Total path points covered by new dynamic obstacles: {original_path_length - len(path)}")
 

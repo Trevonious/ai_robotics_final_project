@@ -104,7 +104,7 @@ def executeRRT(
   path = []
 
   if goal in parent:
-    current = goal
+    current = parent.pop((goal[0], goal[1]), goal)
 
     while current is not None:
       path.append(current)
