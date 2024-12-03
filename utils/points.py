@@ -3,48 +3,6 @@ import math
 import numpy as np
 import random
 
-def drawInitialPoints(map: list, start: tuple, goal: tuple) -> None:
-  """
-  Draws the start and goal points on the map.
-
-  @param map: The map image with obstacles
-  @param start: The start point
-  @param goal: The goal point
-  """
-
-  # Draw start point in green
-  cv2.circle(map, (start[0], start[1]), 10, (0, 255, 0), -1)
-  # Draw goal point in blue
-  cv2.circle(map, (goal[0], goal[1]), 10, (255, 0, 0), -1)
-
-def drawPathPoints(map: list, path: list, color: tuple, verbose: bool = False) -> None:
-  """
-  Draws the points for the provided path.
-
-  @param map: The map image with obstacles
-  @param path: The path to draw
-  @param color: The color to draw the path (default is red)
-  @param verbose: Whether or not to print verbose output (default is False)
-  """
-
-  if verbose:
-    print("Drawing solution path...")
-
-  for point in path:
-    # Draw path in red
-    map[(point[1], point[0])] = color
-
-def heuristic(a: tuple, b: tuple) -> int:
-  """
-  Finds the Manhattan distance between two points.
-
-  @param a: The first point
-  @param b: The second point
-  @return: The Manhattan distance between the two points
-  """
-
-  return abs(a[0] - b[0]) + abs(a[1] - b[1])
-
 def clearPaths(
   map: list,
   start: cv2.typing.Point,
@@ -67,11 +25,104 @@ def clearPaths(
   map[np.all(map == [0, 0, 255], axis=-1)] = [255, 255, 255]
   # Clear path by setting all orange pixels to white
   map[np.all(map == [0, 155, 255], axis=-1)] = [255, 255, 255]
+  # Clear path by setting all light blue pixels to white
+  map[np.all(map == [255, 155, 0], axis=-1)] = [255, 255, 255]
+  # Clear path by setting all purple pixels to white
+  map[np.all(map == [255, 0, 255], axis=-1)] = [255, 255, 255]
   # Redraw start and goal points
   drawInitialPoints(map, start, goal)
 
   if verbose:
     print("Paths cleared from map successfully!")
+
+def drawInitialPoints(map: list, start: tuple, goal: tuple) -> None:
+  """
+  Draws the start and goal points on the map.
+
+  @param map: The map image with obstacles
+  @param start: The start point
+  @param goal: The goal point
+  """
+
+  # Draw start point in green
+  cv2.circle(map, (start[0], start[1]), 10, (0, 255, 0), -1)
+  # Draw goal point in blue
+  cv2.circle(map, (goal[0], goal[1]), 10, (255, 0, 0), -1)
+
+def drawPathPoints(
+  map: list,
+  path: list,
+  color: tuple,
+  verbose: bool = False
+) -> None:
+  """
+  Draws the points for the provided path.
+
+  @param map: The map image with obstacles
+  @param path: The path to draw
+  @param color: The color to draw the path
+  @param verbose: Whether or not to print verbose output (default is False)
+  """
+
+  if verbose:
+    print("Drawing solution path...")
+  
+  previous_point = None
+
+  for point in path:
+    point_color = str(map[(point[1], point[0])])
+    
+    if (
+      point_color == "[255 255 255]" # White = free space
+      or point_color == "[  0 255   0]" # Green = start
+      or point_color == "[255   0   0]" # Blue = goal
+      or point_color == "[  0 155 255]" # Orange = extra RRT path
+    ):
+      
+      if previous_point:
+        # Draw path in provided color
+        cv2.line(map, previous_point, point, color, 1)
+      else:
+        map[(point[1], point[0])] = color
+    
+    previous_point = point
+
+def heuristic(a: tuple, b: tuple) -> int:
+  """
+  Finds the Manhattan distance between two points.
+
+  @param a: The first point
+  @param b: The second point
+  @return: The Manhattan distance between the two points
+  """
+
+  return abs(a[0] - b[0]) + abs(a[1] - b[1])
+
+# Check if the line between two points intersects obstacles
+def isCollisionFree(
+  map: list,
+  point1: tuple,
+  point2: tuple,
+  step_size: int = 1
+) -> bool:
+  """
+  Checks if the line between two points is collision-free.
+
+  @param map: The map image with obstacles
+  @param point1: The first point
+  @param point2: The second point
+  @param step_size: The step size for checking collision (default is 1)
+  @return: True if the line is collision-free, False otherwise
+  """
+  
+  line = np.linspace(point1, point2, num=step_size * 10, dtype=int)
+
+  for x, y in line:
+
+    if str(map[y][x]) == "[0 0 0]":  # Black pixel indicates obstacle
+      return False
+  
+  return True
 
 def selectInitialPoints(map: list, verbose: bool = False) -> tuple:
   """
@@ -96,8 +147,6 @@ def selectInitialPoints(map: list, verbose: bool = False) -> tuple:
   if verbose:
     print("Start point (green): (" + str(start[0]) + ", " + str(start[1]) + ")")
     print("Goal point (blue): (" + str(goal[0]) + ", " + str(goal[1]) + ")")
-  
-  drawInitialPoints(map, start, goal)
   
   print("Start and goal points selected successfully!")
   print()

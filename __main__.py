@@ -14,7 +14,6 @@ from utils.points import clearPaths, drawPathPoints, selectInitialPoints
 
 # Parse command line arguments
 args = parseArgs()
-display_initial_maps = args.display_initial_maps
 map_size = args.map_size
 num_dynamic_obstacles = args.num_dynamic_obstacles
 num_initial_obstacles = args.num_initial_obstacles
@@ -25,18 +24,22 @@ replanning_threshold = args.replanning_threshold
 verbose = args.verbose
 
 # Main execution
+d_star_dynamic_obstacle_path_length = 0
+d_star_dynamic_obstacle_time = 0
+d_star_initial_path_length = 0
+d_star_initial_time = 0
 d_star_path_color = (0, 0, 255) # Red
-dynamic_obstacle_d_star_time = 0
 end_time = 0
-initial_d_star_time = 0
-initial_rrt_time = 0
-replanning_time = 0
 map_solution_time = 0
+replanning_path_color = (255, 0, 255) # Purple
+rrt_initial_path_length = 0
+rrt_initial_time = 0
+rrt_replanning_path_length = 0
+rrt_replanning_time = 0
 start_time = 0
 total_execution_time = 0
 map_number = 0
 maps = generateMaps(
-  display_initial_maps,
   map_size,
   num_maps,
   num_initial_obstacles,
@@ -44,47 +47,43 @@ maps = generateMaps(
 )
 
 for map in maps:
+  replanning_map = None
   map_number += 1
   start, goal = selectInitialPoints(map, verbose)
   # D* algorithm
   start_time = time.time()
-  d_star_solution_path = executeDStar(map, start, goal, verbose)
+  d_star_initial_solution_path = executeDStar(map, start, goal, verbose)
   # Record execution time
   end_time = time.time()
-  initial_d_star_time = end_time - start_time
-  map_solution_time = initial_d_star_time
+  d_star_initial_time = end_time - start_time
+  map_solution_time = d_star_initial_time
+  d_star_initial_path_length = len(d_star_initial_solution_path)
 
-  if len(d_star_solution_path) != 0:
-    drawPathPoints(map, d_star_solution_path, d_star_path_color, verbose)
-    displayMap(map, "initial_solution", map_number, verbose)
+  if d_star_initial_path_length != 0:
+    drawPathPoints(map, d_star_initial_solution_path, d_star_path_color, verbose)
+    displayMap(map, "d*_initial_solution", map_number, verbose)
 
     print()
-
+    
+    rrt_initial_solution_path = [start]
     # RRT Algorithm
     start_time = time.time()
-    # TODO: Change RRT to take a list for start and a list for goal
-    # rrt_solution_path = executeRRT(
-    #   initial_rrt_map,
-    #   [start],
-    #   [goal],
-    #   rrt_max_iterations,
-    #   rrt_step_size,
-    #   verbose
-    # )
-    rrt_solution_path = executeRRT(
+    rrt_initial_solution_path = executeRRT(
       map,
-      start,
-      goal,
+      rrt_initial_solution_path,
+      [goal],
       rrt_max_iterations,
       rrt_step_size,
       verbose
     )
     # Record execution time
     end_time = time.time()
-    initial_rrt_time = end_time - start_time
-    map_solution_time += initial_rrt_time
+    rrt_initial_time = end_time - start_time
+    map_solution_time += rrt_initial_time
+    rrt_initial_path_length = len(rrt_initial_solution_path)
     
-    if len(rrt_solution_path) != 0:
+    if rrt_initial_path_length != 0:
+      drawPathPoints(map, d_star_initial_solution_path, d_star_path_color, verbose)
       displayMap(map, "rrt_initial_solution", map_number, verbose)
 
       print()
@@ -98,10 +97,10 @@ for map in maps:
     # Clear paths from the map
     clearPaths(map, start, goal, verbose)
     # Redraw D* solution path
-    drawPathPoints(map, d_star_solution_path, d_star_path_color, verbose)
+    drawPathPoints(map, d_star_initial_solution_path, d_star_path_color, verbose)
 
     # Dynamic Obstacle Simulation
-    if len(d_star_solution_path) < math.floor(map_size * 0.05):
+    if len(d_star_initial_solution_path) < math.floor(map_size * 0.05):
       print("D* path is too short to generate dynamic obstacles. Skipping dynamic obstacle simulation...")
       print()
 
@@ -109,12 +108,12 @@ for map in maps:
 
       if num_dynamic_obstacles == math.floor(map_size * 0.005):
 
-        if len(d_star_solution_path) < math.floor(map_size * 0.15):
+        if len(d_star_initial_solution_path) < math.floor(map_size * 0.15):
           num_dynamic_obstacles = 1
 
           print("Path too short. Reduced number of dynamic obstacles to 1.")
 
-        elif len(d_star_solution_path) < math.floor(map_size * 0.4):
+        elif len(d_star_initial_solution_path) < math.floor(map_size * 0.4):
           num_dynamic_obstacles = math.floor(num_dynamic_obstacles / 2)
 
           print(f"Path too short. Reduced number of dynamic obstacles to {num_dynamic_obstacles}.")
@@ -124,66 +123,52 @@ for map in maps:
       # Generate dynamic obstacles at selected point
       generateDynamicObstacle(
         map,
-        d_star_solution_path,
+        d_star_initial_solution_path,
         start,
         goal,
         num_dynamic_obstacles,
         verbose
       )
+      # Save the generated map with dynamic obstacles
+      saveMap(map, "dynamic_obstacle", map_number, verbose)
 
-      if display_initial_maps:
-        # Display the generated map with dynamic obstacles
-        displayMap(map, "dynamic_obstacle", map_number, verbose)
-
-        print()
-
-      else:
-        # Save the generated map with dynamic obstacles
-        saveMap(map, "dynamic_obstacle", map_number, verbose)
-
-        print()
+      print()
 
       # Clear paths from the map
       clearPaths(map, start, goal, verbose)
-
-      # TODO: Create function to backtrack solution path until collide with an
-      # obstacle, then use RRT to get around the obstacle (reaching anywhere on
-      # the path that is not already visited), updating the solution path, and
-      # continue to the goal. Do this until:
-      #   1. The goal is reached
-      #   2. The path is blocked by another dynamic obstacle
-      #   3. RRT is unable to find a path around an obstacle
-      #
-      # If you encounter the max number of dynamic obstacles for the map size
-      # (math.floor(map_size * 0.005)) or if RRT is unable to find a path, rerun
-      # the D* algorithm to find the new optimal path.
-      #
-      # When we have to rerun D*, we should save a picture of the map, then
-      # remove the path from the diagram, repaint the start/goal points, and
-      # then run D* again.
-
       # Replanning Algorithm
       start_time = time.time()
-      replanning_solution_path = executeReplanning(
+      rrt_replanning_solution_path = executeReplanning(
         map,
-        d_star_solution_path,
+        d_star_initial_solution_path,
         replanning_threshold,
+        rrt_max_iterations,
+        rrt_step_size,
         verbose
       )
       # Record execution time
       end_time = time.time()
-      replanning_time = end_time - start_time
-      map_solution_time += replanning_time
+      rrt_replanning_time = end_time - start_time
+      map_solution_time += rrt_replanning_time
+      rrt_replanning_path_length = len(rrt_replanning_solution_path)
       
-      if len(replanning_solution_path) != 0:
-        displayMap(map, "replanning_solution", map_number, verbose)
+      if rrt_replanning_path_length != 0:
+        drawPathPoints(map, d_star_initial_solution_path, d_star_path_color, verbose)
+        displayMap(map, "rrt_replanning_solution", map_number, verbose)
+        
+        clearPaths(map, start, goal, verbose)
+        
+        replanning_map = map.copy()
+        
+        drawPathPoints(replanning_map, rrt_replanning_solution_path, replanning_path_color, verbose)
+        displayMap(replanning_map, "replanning_only_solution", map_number, verbose)
         
         print()
 
       else:
-        saveMap(map, "rrt_initial_failure", map_number, verbose)
+        saveMap(map, "rrt_replanning_failure", map_number, verbose)
 
-        print("Replanning failed.")
+        print("RRT Replanning failed.")
         print()
 
       # Clear paths from the map
@@ -193,15 +178,39 @@ for map in maps:
 
       start_time = time.time()
       # Execute D* algorithm with original start and goal
-      replanning_solution_path = executeDStar(map, start, goal, verbose)
+      d_star_dynamic_obstacle_solution_path = executeDStar(
+        map,
+        start,
+        goal,
+        verbose
+      )
       # Record execution time
       end_time = time.time()
-      dynamic_obstacle_d_star_time = end_time - start_time
-      map_solution_time += dynamic_obstacle_d_star_time
+      d_star_dynamic_obstacle_time = end_time - start_time
+      map_solution_time += d_star_dynamic_obstacle_time
+      d_star_dynamic_obstacle_path_length = len(
+        d_star_dynamic_obstacle_solution_path
+      )
 
-      if len(replanning_solution_path) != 0:
-        drawPathPoints(map, replanning_solution_path, d_star_path_color, verbose)
-        displayMap(map, "replanning_solution", map_number, verbose)
+      if d_star_dynamic_obstacle_path_length != 0:
+        drawPathPoints(
+          map,
+          d_star_dynamic_obstacle_solution_path,
+          d_star_path_color,
+          verbose
+        )
+        displayMap(map, "d*_dynamic_obstacle_solution", map_number, verbose)
+        
+        print()
+        
+        if replanning_map is not None:
+          drawPathPoints(
+            replanning_map,
+            d_star_dynamic_obstacle_solution_path,
+            d_star_path_color,
+            verbose
+          )
+          displayMap(replanning_map, "d*_and_rrt_replanning_solution", map_number, verbose)
 
         print()
 
@@ -217,17 +226,41 @@ for map in maps:
 
   if verbose:
 
-    if initial_d_star_time != 0:
-      print(f"Initial D* Execution Time: {round(initial_d_star_time, 6)} seconds")
+    if d_star_initial_time != 0:
+      
+      if d_star_initial_path_length != 0:
+        print(f"D* Initial Solution Path Length: {d_star_initial_path_length}")
+      else:
+        print("No D* initial solution path found.")
+      
+      print(f"D* Initial Execution Time: {round(d_star_initial_time, 6)} seconds")
 
-    if initial_rrt_time != 0:
-      print(f"Initial RRT Execution Time: {round(initial_rrt_time, 6)} seconds")
+    if rrt_initial_time != 0:
+      
+      if rrt_initial_path_length != 0:
+        print(f"RRT Initial Solution Path Length: {rrt_initial_path_length} (RRT step size = {rrt_step_size})")
+      else:
+        print("No RRT initial solution path found.")
+      
+      print(f"RRT Initial Execution Time: {round(rrt_initial_time, 6)} seconds")
 
-    if replanning_time != 0:
-      print(f"Replanning Execution Time: {round(replanning_time, 6)} seconds")
+    if rrt_replanning_time != 0:
+      
+      if rrt_replanning_path_length != 0:
+        print(f"RRT Replanning Solution Path Length: {rrt_replanning_path_length} (RRT step size = {rrt_step_size})")
+      else:
+        print("No RRT replanning solution path found.")
+      
+      print(f"RRT Replanning Execution Time: {round(rrt_replanning_time, 6)} seconds")
 
-    if dynamic_obstacle_d_star_time != 0:
-      print(f"Dynamic Obstacle D* Execution Time: {round(dynamic_obstacle_d_star_time, 6)} seconds")
+    if d_star_dynamic_obstacle_time != 0:
+      
+      if d_star_dynamic_obstacle_path_length != 0:
+        print(f"D* Dynamic Obstacle Solution Path Length: {d_star_dynamic_obstacle_path_length}")
+      else:
+        print("No D* dynamic obstacle solution path found.")
+      
+      print(f"D* Dynamic Obstacle Execution Time: {round(d_star_dynamic_obstacle_time, 6)} seconds")
       
     print(f"Map {map_number} Solution Time: {round(map_solution_time, 6)} seconds")
 

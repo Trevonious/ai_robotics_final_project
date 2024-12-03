@@ -12,7 +12,6 @@ from utils.points import drawInitialPoints, drawPathPoints, selectPathPoint
 from utils.strings import getFormattedMapTitle
 
 def generateMaps(
-  display_initial_maps: bool = False,
   map_size: int = 400,
   number_maps: int = 1,
   number_obstacles: int = 20,
@@ -22,7 +21,6 @@ def generateMaps(
   Generates maps with random obstacles and saves them as images in the 
   <i>map/images/initial</i> folder.
 
-  @param display_initial_maps: Whether or not to display the initial generated maps, one by one (default is False)
   @param map_size: The size of the map (default is 400)
   @param number_maps: The number of maps to generate (default is 1)
   @param number_obstacles: The number of obstacles to generate (default is 20)
@@ -39,7 +37,6 @@ def generateMaps(
   maps = []
   num_maps = number_maps
   num_obstacles = number_obstacles
-  should_display_maps = display_initial_maps
   suffix = "initial"
 
   # Generate maps
@@ -53,11 +50,7 @@ def generateMaps(
     for i in range(num_obstacles):
       generateObstacle(map)
 
-    if should_display_maps:
-      displayMap(map, suffix, map_number, verbose)
-    else:
-      saveMap(map, suffix, map_number, verbose)
-    
+    saveMap(map, suffix, map_number, verbose)
     maps.append(np.array(map))
 
     if verbose:
@@ -236,9 +229,10 @@ def saveMap(
     images_folder_path += filename_suffix + '/'
     map_filename += "_" + filename_suffix
   
-  map_filename += ".png"
+  filename = images_folder_path + map_filename + ".png"
+  filename = filename.replace("*", "_star")
 
-  cv2.imwrite(images_folder_path + map_filename, map)
+  cv2.imwrite(filename, map)
 
   if verbose:
     print(title + " saved successfully!")
@@ -284,7 +278,9 @@ def generateDynamicObstacle(
       print(f"Dynamic obstacle {obstacle_number} generated successfully!")
     
     # Get all points that are part of the path (i.e. are red)
-    current_path_points = np.unique(np.argwhere(cv2.inRange(map, path_color, path_color)), axis=0)
+    current_path_points = np.unique(
+      np.argwhere(cv2.inRange(map, path_color, path_color)), axis=0
+    )
     # Swap columns to get (x, y) format
     current_path_points[:, [1, 0]] = current_path_points[:, [0, 1]]
     # Convert to list of tuples
@@ -292,7 +288,9 @@ def generateDynamicObstacle(
     path_points_covered = len(path_covered) - len(current_path_points)
     # Update path to keep points that are not covered by the dynamic obstacles,
     # while preserving the order of the points from the original path
-    path_covered = [point for point in path_covered if point in current_path_points]
+    path_covered = [
+      point for point in path_covered if point in current_path_points
+    ]
 
     if verbose:
       print(f"Path points covered by dynamic obstacle {obstacle_number}: {path_points_covered}")

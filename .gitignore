@@ -9,6 +9,7 @@ maps/images/*/*.png
 # VS Code
 .vscode/*
 !.vscode/settings.json
+!.vscode/extensions.json
 
 # C extensions
 *.so
