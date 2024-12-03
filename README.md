@@ -34,6 +34,6 @@ Below are examples of running with flags:
 
 - _py -m ai_robotics_final_project -nio 15_
 
-- _py -m ai_robotics_final_project -ms 1000 -ndo 5 -nio 50 -nm 5 -rmi 5000 -rss 10 -v True_
+- _py -m ai_robotics_final_project -ms 800 -ndo 4 -nio 40 -rmi 5000 -rss 8 -rt 4 -v True_
 
 When you close a map image, the program will continue execution.

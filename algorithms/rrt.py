@@ -12,7 +12,7 @@ def executeRRT(
   map: list,
   visited_path: list,
   unvisited_path: list,
-  max_iterations: int = 10000,
+  max_iterations: int = 1000,
   step_size: int = 10,
   verbose=False
 ) -> list:
